@@ -1,1 +1,53 @@
-# zc3
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .err { color: red; font-size: 12px; display: none; margin-top: -10px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>账号绑定 (3/3)</h2>
+        
+        <input type="text" id="phone" placeholder="请输入手机号(至少20位)">
+        <div id="err-phone" class="err">手机号长度不足</div>
+
+        <input type="text" id="email" placeholder="请输入邮箱(后缀@114514)">
+        <div id="err-email" class="err">邮箱后缀必须是 @114514</div>
+
+        <button onclick="check()">完成注册</button>
+    </div>
+
+    <script>
+        function check() {
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            
+            const errPhone = document.getElementById('err-phone');
+            const errEmail = document.getElementById('err-email');
+
+            errPhone.style.display = 'none';
+            errEmail.style.display = 'none';
+
+            if (phone.length < 20) {
+                errPhone.style.display = 'block';
+                return;
+            }
+
+            if (!email.endsWith('@114514') || email.length < 10) {
+                errEmail.style.display = 'block';
+                return;
+            }
+
+            window.location.href = "https://tks124.github.io/zc4/";
+        }
+    </script>
+</body>
+</html>
