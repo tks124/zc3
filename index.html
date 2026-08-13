@@ -2,52 +2,240 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>注册</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .err { color: red; font-size: 12px; display: none; margin-top: -10px; margin-bottom: 10px; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        
+        .box { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); 
+            width: 90%; 
+            max-width: 350px; 
+            text-align: center; 
+            transition: all 0.3s ease;
+        }
+        
+        h2 { margin-top: 0; color: #333; }
+        
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            font-size: 16px; 
+            outline: none;
+        }
+        input:focus { border-color: #007bff; }
+        input[readonly] { background: #f9f9f9; color: #666; cursor: not-allowed; }
+
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:active { background: #0056b3; }
+
+        .err { color: #e74c3c; font-size: 12px; display: none; margin-top: -8px; margin-bottom: 8px; text-align: left; padding-left: 5px; }
+
+        #captcha-section { 
+            display: none; 
+            margin-top: 20px; 
+            padding-top: 20px; 
+            border-top: 1px dashed #ddd;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .captcha-display { 
+            font-size: 24px; 
+            font-weight: bold; 
+            letter-spacing: 5px; 
+            color: #333; 
+            margin: 10px 0; 
+            user-select: none;
+        }
+        .hint { font-size: 12px; color: #888; margin-bottom: 10px; }
+
+        #gravity-track {
+            position: relative;
+            width: 100%;
+            height: 50px;
+            background: #eee;
+            border-radius: 25px;
+            margin: 15px 0;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        #gravity-ball {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: #007bff;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .track-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: #999;
+            pointer-events: none;
+        }
+        .track-label.left { left: 10px; }
+        .track-label.right { right: 10px; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>账号绑定 (3/3)</h2>
-        
-        <input type="text" id="phone" placeholder="请输入手机号">
-        <div id="err-phone" class="err">手机号长度不足</div>
 
-        <input type="text" id="email" placeholder="请输入邮箱">
-        <div id="err-email" class="err">邮箱后缀必须是 @114514</div>
-
-        <button onclick="check()">完成注册</button>
+<div class="box">
+    <h2 id="title">账号绑定 (1/3)</h2>
+    
+    <div id="step1">
+        <input type="tel" id="phone" placeholder="请输入手机号" maxlength="11">
+        <div id="err-phone" class="err">手机号格式不正确</div>
+        <button onclick="nextStep(1)">下一步</button>
     </div>
 
-    <script>
-        function check() {
+    <div id="step2" style="display:none;">
+        <input type="email" id="email" placeholder="请输入邮箱">
+        <div id="err-email" class="err">邮箱后缀必须是 @114514</div>
+        <button onclick="nextStep(2)">下一步</button>
+    </div>
+
+    <div id="captcha-section">
+        <div style="font-size:14px; color:#666; margin-bottom:5px;">请输入下方验证码</div>
+        <div class="captcha-display">14670</div>
+        <div class="hint">请倾斜手机控制小球</div>
+        
+        <input type="text" id="captcha-input" placeholder="等待重力输入..." readonly>
+        <div id="err-captcha" class="err">验证码错误，请重新倾斜</div>
+        
+        <div id="gravity-track">
+            <div id="gravity-ball"></div>
+            <span class="track-label left">← 左倾</span>
+            <span class="track-label right">右倾 →</span>
+        </div>
+        
+        <button onclick="finalCheck()">完成注册</button>
+    </div>
+</div>
+
+<script>
+    function nextStep(current) {
+        if (current === 1) {
             const phone = document.getElementById('phone').value;
+            if (phone.length < 11) {
+                document.getElementById('err-phone').style.display = 'block';
+                return;
+            }
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'block';
+            document.getElementById('title').innerText = '账号绑定 (2/3)';
+        } else if (current === 2) {
             const email = document.getElementById('email').value;
-            
-            const errPhone = document.getElementById('err-phone');
-            const errEmail = document.getElementById('err-email');
-
-            errPhone.style.display = 'none';
-            errEmail.style.display = 'none';
-
-            if (phone.length < 20) {
-                errPhone.style.display = 'block';
+            if (!email.endsWith('@114514')) {
+                document.getElementById('err-email').style.display = 'block';
                 return;
             }
-
-            if (!email.endsWith('@114514') || email.length < 10) {
-                errEmail.style.display = 'block';
-                return;
-            }
-
-            window.location.href = "https://tks124.github.io/zc4/";
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('captcha-section').style.display = 'block';
+            document.getElementById('title').innerText = '账号绑定 (3/3)';
+            initGravity();
         }
-    </script>
+    }
+
+    const TARGET_CODE = "14670";
+    let currentIndex = 0;
+    let ballPos = 50;
+    let tiltSensitivity = 1.5;
+    let isListening = false;
+
+    function initGravity() {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission()
+                .then(state => {
+                    if (state === 'granted') startListening();
+                    else alert('请允许访问运动传感器，否则无法完成注册！');
+                })
+                .catch(console.error);
+        } else {
+            startListening();
+        }
+    }
+
+    function startListening() {
+        if (isListening) return;
+        isListening = true;
+        
+        window.addEventListener('deviceorientation', (e) => {
+            let gamma = e.gamma || 0;
+            
+            let normalized = 50 + (gamma * tiltSensitivity);
+            ballPos = Math.max(0, Math.min(100, normalized));
+            
+            document.getElementById('gravity-ball').style.left = ballPos + '%';
+            
+            checkCollision();
+        });
+    }
+
+    function checkCollision() {
+        if (currentIndex >= TARGET_CODE.length) return;
+        
+        const targetChar = TARGET_CODE[currentIndex];
+        let inZone = false;
+
+        if (targetChar === '1' && ballPos < 20) inZone = true;
+        if (targetChar === '4' && ballPos >= 20 && ballPos < 40) inZone = true;
+        if (targetChar === '6' && ballPos >= 40 && ballPos < 60) inZone = true;
+        if (targetChar === '7' && ballPos >= 60 && ballPos < 80) inZone = true;
+        if (targetChar === '0' && ballPos >= 80) inZone = true;
+
+        if (inZone) {
+            const input = document.getElementById('captcha-input');
+            input.value += targetChar;
+            currentIndex++;
+            
+            const ball = document.getElementById('gravity-ball');
+            ball.style.background = '#28a745';
+            setTimeout(() => ball.style.background = '#007bff', 200);
+
+            if (currentIndex >= TARGET_CODE.length) {
+                input.placeholder = "输入完成！";
+            }
+        }
+    }
+
+    function finalCheck() {
+        const captcha = document.getElementById('captcha-input').value;
+        const err = document.getElementById('err-captcha');
+        
+        if (captcha !== TARGET_CODE) {
+            err.style.display = 'block';
+            document.getElementById('captcha-input').value = '';
+            currentIndex = 0;
+            return;
+        }
+        
+        err.style.display = 'none';
+        window.location.href = "https://tks124.github.io/zc4/";
+    }
+</script>
 </body>
 </html>
