@@ -18,31 +18,29 @@
         
         #scroll-container {
             position: relative;
-            width: 100%;
-            height: 250px;
+            width: 280px; 
+            height: 280px;
+            margin: 0 auto 10px auto;
             background: #000;
-            border-radius: 50%;
+            border-radius: 50%; 
             overflow: hidden;
             border: 2px solid #444;
-            margin-bottom: 10px;
         }
         #number-canvas { width: 100%; height: 100%; display: block; }
         
         #crosshair {
             position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px; height: 40px;
-            border: 2px solid #007bff;
-            border-radius: 50%;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 30px; height: 30px;
+            border-bottom: 3px solid #007bff;
+            border-left: 3px solid #007bff;
+            border-right: 3px solid #007bff;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
             pointer-events: none;
             box-shadow: 0 0 10px rgba(0,123,255,0.8);
         }
-        #crosshair::before, #crosshair::after {
-            content: ''; position: absolute; background: #007bff;
-        }
-        #crosshair::before { width: 2px; height: 10px; top: -12px; left: 50%; transform: translateX(-50%); }
-        #crosshair::after { width: 2px; height: 10px; bottom: -12px; left: 50%; transform: translateX(-50%); }
 
         .status { font-size: 14px; height: 20px; margin-top: 5px; color: #4caf50; }
     </style>
@@ -58,7 +56,7 @@
         <div id="err-email" class="err">邮箱后缀必须是 @114514</div>
 
         <div id="captcha-section">
-            <div class="captcha-hint">⚠️ 反向重力验证：倾斜手机将目标数字移至中心</div>
+            <div class="captcha-hint">⚠️ 反向重力验证：倾斜手机微调转盘</div>
             <div>目标验证码：<span class="target-display">1 4 6 7 0</span></div>
             
             <div id="scroll-container">
@@ -77,10 +75,11 @@
         const TARGET_CODE = "14670";
         let collected = "";
         let numbers = [];
-        let offsetX = 0, offsetY = 0;
-        let tiltX = 0, tiltY = 0;
+        let currentAngle = 0;
+        let baseSpeed = 0.005;
+        let tiltOffset = 0;
         let isListening = false;
-        let animFrameId = null;
+        let lastCollectTime = 0;
 
         function initNumbers() {
             numbers = [];
@@ -89,14 +88,7 @@
                 targetArr.push(Math.floor(Math.random() * 10));
             }
             targetArr.sort(() => Math.random() - 0.5);
-            
-            for(let i = 0; i < targetArr.length; i++) {
-                numbers.push({
-                    val: targetArr[i],
-                    x: (Math.random() - 0.5) * 800,
-                    y: (Math.random() - 0.5) * 800 
-                });
-            }
+            numbers = targetArr;
         }
 
         function handleClick() {
@@ -147,8 +139,7 @@
             if (isListening) return;
             isListening = true;
             window.addEventListener('deviceorientation', (event) => {
-                tiltX = -(event.gamma || 0) * 1.5; 
-                tiltY = (event.beta || 0) * 1.5;
+                tiltOffset = Math.max(-0.05, Math.min(0.05, -(event.gamma || 0) * 0.002)); 
             });
         }
 
@@ -157,52 +148,55 @@
         const statusEl = document.getElementById('status');
 
         function drawLoop() {
-            offsetX += tiltX;
-            offsetY += tiltY;
+            const size = canvas.parentElement.clientWidth;
+            canvas.width = size;
+            canvas.height = size;
 
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - 20;
+
+            currentAngle += baseSpeed + tiltOffset;
 
             ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.font = 'bold 16px monospace';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size/2, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.font = 'bold 14px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            let matchedThisFrame = null;
+            let nextTarget = TARGET_CODE[collected.length];
+            let matchedIndex = -1;
 
-            for (let num of numbers) {
-                let screenX = centerX + num.x + offsetX;
-                let screenY = centerY + num.y + offsetY;
+            for (let i = 0; i < numbers.length; i++) {
+                let angle = currentAngle + (i / numbers.length) * Math.PI * 2;
+                let x = centerX + radius * Math.cos(angle);
+                let y = centerY + radius * Math.sin(angle);
 
-                let dist = Math.sqrt((screenX - centerX)**2 + (screenY - centerY)**2);
-                if (dist < 20) {
-                    if (!collected.includes(num.val.toString()) || 
-                        (collected.length < TARGET_CODE.length && num.val.toString() === TARGET_CODE[collected.length])) {
-                        
-                        if (num.val.toString() === TARGET_CODE[collected.length]) {
-                            matchedThisFrame = num;
-                            ctx.fillStyle = '#007bff';
-                        } else {
-                            ctx.fillStyle = '#ff4444';
-                        }
+                let targetAngle = -Math.PI / 2;
+                let diff = Math.abs(angle - targetAngle);
+                if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+                if (diff < 0.05) {
+                    if (numbers[i].toString() === nextTarget) {
+                        ctx.fillStyle = '#007bff';
+                        matchedIndex = i;
                     } else {
-                        ctx.fillStyle = '#666';
+                        ctx.fillStyle = '#ff4444';
                     }
                 } else {
                     ctx.fillStyle = '#aaa';
                 }
-                ctx.fillText(num.val, screenX, screenY);
+                ctx.fillText(numbers[i], x, y);
             }
 
-            if (matchedThisFrame) {
-                collected += matchedThisFrame.val;
+            if (matchedIndex !== -1 && Date.now() - lastCollectTime > 500) {
+                collected += nextTarget;
                 statusEl.innerText = `已输入: ${collected}`;
                 if (navigator.vibrate) navigator.vibrate(30);
-                matchedThisFrame.x = 9999; 
-                matchedThisFrame.y = 9999;
+                lastCollectTime = Date.now();
                 
                 if (collected === TARGET_CODE) {
                     statusEl.innerText = "✅ 验证通过！";
@@ -210,7 +204,7 @@
                 }
             }
 
-            animFrameId = requestAnimationFrame(drawLoop);
+            requestAnimationFrame(drawLoop);
         }
 
         function validateCaptcha() {
